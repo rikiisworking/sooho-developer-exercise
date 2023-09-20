@@ -38,5 +38,6 @@
   },
   "solidity.compileUsingRemoteVersion": "v0.8.18+commit.87f61d9",
   "solidity.linter": "solhint",
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": true
 }

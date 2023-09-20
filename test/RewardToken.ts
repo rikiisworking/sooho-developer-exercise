@@ -100,6 +100,12 @@ describe("RewardToken", () => {
     });
   });
 
+  it("realRatio() returns 0 if eth is not supplied yet", async () => {
+    await rewardToken.realRatio().then((result: bigint) => {
+      expect(result).to.equal(BigInt(0));
+    });
+  })
+
   it("owner() should return current owner", async () => {
     await rewardToken.owner().then((result: string) => {
       expect(result).to.equal(owner.address);

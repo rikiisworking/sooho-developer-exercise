@@ -91,6 +91,4 @@ contract RewardToken is ERC20, Ownable, Pausable {
     }
 
     receive() external payable {}
-
-    fallback() external payable {}
 }
