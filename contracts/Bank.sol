@@ -233,9 +233,9 @@ contract Bank is Ownable, Pausable {
     }
 
     function showLeaders(uint256 topN) external view returns (address[] memory users_, uint256[] memory amounts_) {
-        address[] memory sortedLeaders = sort();
-
         uint256 counts = leadersCount < topN ? leadersCount : topN;
+
+        address[] memory sortedLeaders = sort();
         address[] memory _users = new address[](counts);
         uint256[] memory _amounts = new uint256[](counts);
 
@@ -243,6 +243,24 @@ contract Bank is Ownable, Pausable {
             address account = sortedLeaders[i];
             _users[i] = account;
             _amounts[i] = deposited[account].balance;
+        }
+        return (_users, _amounts);
+    }
+
+    function getSlicedLeaders(
+        uint256 start,
+        uint256 end
+    ) external view returns (address[] memory users_, uint256[] memory amounts_) {
+        uint256 counts = leadersCount < end ? leadersCount : end;
+
+        address[] memory sortedLeaders = sort();
+        address[] memory _users = new address[](counts - start);
+        uint256[] memory _amounts = new uint256[](counts - start);
+
+        for (uint256 i = start; i < counts; i++) {
+            address account = sortedLeaders[i];
+            _users[i - start] = account;
+            _amounts[i - start] = deposited[account].balance;
         }
         return (_users, _amounts);
     }

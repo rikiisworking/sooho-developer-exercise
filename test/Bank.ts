@@ -514,4 +514,33 @@ describe("Bank", () => {
       expect(result).to.equal(user0.address);
     });
   });
+
+  it("getSlicedLeaders() should work properly", async () => {
+    const depositInfos = [];
+    for (const user of users.slice(0, 25)) {
+      const depositAmount = ethers.parseEther(getRandomFloat(1.0, 200.0, 3));
+      await bank.connect(user).deposit({ value: depositAmount });
+      depositInfos.push({
+        address: user.address,
+        amount: depositAmount,
+      });
+    }
+
+    depositInfos.sort((a, b) => {
+      return Number(b.amount - a.amount);
+    });
+
+    let leaders = await bank.getSlicedLeaders(0, 10);
+    expect(leaders[0]).to.deep.equal(depositInfos.slice(0, 10).map((element) => element.address));
+    expect(leaders[1]).to.deep.equal(depositInfos.slice(0, 10).map((element) => element.amount));
+
+    leaders = await bank.getSlicedLeaders(10, 20);
+    expect(leaders[0]).to.deep.equal(depositInfos.slice(10, 20).map((element) => element.address));
+    expect(leaders[1]).to.deep.equal(depositInfos.slice(10, 20).map((element) => element.amount));
+
+    leaders = await bank.getSlicedLeaders(20, 30);
+    expect(leaders[0]).to.deep.equal(depositInfos.slice(20, 25).map((element) => element.address));
+    expect(leaders[1]).to.deep.equal(depositInfos.slice(20, 25).map((element) => element.amount));
+  })
+
 });
