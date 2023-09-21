@@ -120,6 +120,7 @@ describe("Bank", () => {
   });
 
   it("withdraw() should work as expected", async () => {
+    // case: partial withdrawal
     await bank.connect(user0).deposit({ value: depositAmount });
     const balanceBefore = await ethers.provider.getBalance(user0);
     await bank.connect(user0).withdraw(withdrawAmount);
@@ -138,14 +139,26 @@ describe("Bank", () => {
     await bank.connect(user2).deposit({ value: depositAmount });
     await bank.connect(users[0]).deposit({ value: depositAmount });
 
+    // case: user deleted
     await time.increase(10);
     const leadersCountBefore = await bank.leadersCount();
     await bank.connect(user2).withdraw(depositAmount);
     const leadersCountAfter = await bank.leadersCount();
-    expect(leadersCountAfter).to.be.equal(leadersCountBefore - BigInt(1));
+    expect(leadersCountAfter).to.equal(leadersCountBefore - BigInt(1));
     await bank.userIndex(user2).then((result: bigint) => {
       expect(result).to.equal(BigInt(0));
     });
+
+    // case: user not deleted (stake remains)
+    const leadersCountBefore2 = await bank.leadersCount();
+    await bank.connect(user1).stake(stakeAmount);
+    await bank.connect(user1).withdraw(depositAmount - stakeAmount);
+    const leadersCountAfter2 = await bank.leadersCount();
+    expect(leadersCountAfter2).to.equal(leadersCountBefore2);
+    await bank.userIndex(user1).then((result: bigint) => {
+      expect(result).not.to.equal(BigInt(0));
+    })
+
   });
 
   it("withdraw() should revert if withdraw amount is greater than balance", async () => {
