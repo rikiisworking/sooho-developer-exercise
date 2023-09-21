@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 contract RewardToken is ERC20, Ownable, Pausable {
     uint256 public totalEthSupply;
@@ -45,7 +45,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
         totalEthSupply -= amount * swapRatio;
         _burn(msg.sender, amount);
 
-        (bool sent, ) = msg.sender.call{ value: amount * swapRatio }("");
+        (bool sent, ) = msg.sender.call{value: amount * swapRatio}("");
         require(sent, "failed to send native token");
 
         emit Withdraw(msg.sender, amount);
