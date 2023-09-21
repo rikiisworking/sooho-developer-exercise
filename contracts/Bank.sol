@@ -128,8 +128,8 @@ contract Bank is Ownable, Pausable {
 
             userIndex[user] = 0;
             users[leadersCount] = address(0);
-            leadersCount--;
         }
+        leadersCount--;
     }
 
     /**
@@ -176,12 +176,13 @@ contract Bank is Ownable, Pausable {
         require(!blackList[msg.sender], "user has been blacklisted");
         claimInterest(msg.sender);
 
+        deposited[msg.sender].balance -= amount;
+
         if (amount == userAccount.balance) {
             deposited[msg.sender].claimedAt = 0;
             removeUser(msg.sender);
         }
 
-        deposited[msg.sender].balance -= amount;
         (bool sent, ) = msg.sender.call{value: amount}("");
         require(sent, "failed to send native token");
 
