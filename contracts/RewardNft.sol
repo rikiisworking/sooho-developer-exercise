@@ -9,6 +9,11 @@ contract RewardNft is ERC721, Ownable {
 
     constructor() ERC721("You are a VIP", "VIP") Ownable() {}
 
+    /**
+     * @notice  mints nft to address
+     * @dev     tokenId starts from 0
+     * @param   to recipient who gets minted
+     */
     function mint(address to) public onlyOwner {
         _mint(to, tokenId);
         tokenId += 1;

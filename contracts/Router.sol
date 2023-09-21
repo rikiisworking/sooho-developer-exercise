@@ -10,10 +10,28 @@ contract Router {
         bank = bank_;
     }
 
+    /**
+     * @notice  get paged bank users, 10 for each page
+     * @dev check for details in Bank.getSlicedLeader()
+     * @param   page  page number
+     * @return  users_  user addresses
+     * @return  amounts_  user balances
+     */
     function getUsers(uint256 page) external view returns (address[] memory users_, uint256[] memory amounts_) {
         return IBank(bank).getSlicedLeaders((page - 1) * 10, (page) * 10);
     }
 
+    /**
+     * @notice  returns bank user's infomration in total
+     * @param   user  user address to check information
+     * @param   options  abi encoded ("bool", "bool") bytes
+     * @return  depositBalance  balance of deposit
+     * @return  depositClaimedAt  last interest claimed timestamp
+     * @return  stakeBalance  balance of stake
+     * @return  stakeClaimedAt  last reward claimed timestamp
+     * @return  isBlackUser  true if blackListed
+     * @return  blockNumber  current blockNumber
+     */
     function getUserInfo(
         address user,
         bytes calldata options
