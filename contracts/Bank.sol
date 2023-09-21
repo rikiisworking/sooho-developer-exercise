@@ -91,8 +91,9 @@ contract Bank is Ownable, Pausable {
         return accounts;
     }
 
-    // reference: https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
     function quickSort(address[] memory accounts, int left, int right) internal view {
+        // reference: https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
+
         int i = left;
         int j = right;
         if (i == j) return;
