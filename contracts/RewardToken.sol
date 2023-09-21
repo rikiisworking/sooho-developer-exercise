@@ -36,7 +36,6 @@ contract RewardToken is ERC20, Ownable, Pausable {
 
     /**
      * @notice  deposits eth to get token
-     * @dev     changes realRatio() return val
      */
     function deposit() external payable whenNotPaused {
         _mint(msg.sender, msg.value / swapRatio);
@@ -47,7 +46,6 @@ contract RewardToken is ERC20, Ownable, Pausable {
 
     /**
      * @notice  withdraws eth by burning token
-     * @dev     changes realRatio() return val
      * @param   amount amount of eth to withdraw
      */
     function withdraw(uint256 amount) external whenNotPaused {
@@ -61,7 +59,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
     }
 
     /**
-     * @notice  ratio between eth supply and token supply
+     * @notice  returns the ratio of eth supply to token supply, used to calculate the amount of ETH that users can deposit or withdraw.
      * @dev     returns 0 if no eth supplied
      * @return  uint256 ratio
      */
@@ -82,8 +80,8 @@ contract RewardToken is ERC20, Ownable, Pausable {
 
     /**
      * @notice  mints token to user
-     * @param   account  recipient to get minted
-     * @param   amount  amount to get minted
+     * @param   account recipient to get minted
+     * @param   amount amount to get minted
      */
     function mint(address account, uint256 amount) external onlyMinter whenNotPaused {
         require(totalSupply() + amount <= maxSupply, "max supply limit violated");
@@ -92,7 +90,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
 
     /**
      * @notice  set address as minter
-     * @param   minter_  only minter can call mint()
+     * @param   minter_ only minter can call mint()
      */
     function setMinter(address minter_) external onlyOwner {
         minter = minter_;
@@ -101,7 +99,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
 
     /**
      * @notice  updates swapRatio
-     * @param   swapRatio_  ratio to update
+     * @param   swapRatio_ ratio to update
      */
     function updateSwapRatio(uint256 swapRatio_) external onlyOwner {
         require(swapRatio_ <= realRatio(), "invalid input ratio");
@@ -110,7 +108,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
     }
 
     /**
-     * @notice  toggle pause service
+     * @notice  toggle pause service, when the contract is paused, users cannot deposit, withdraw, or mint tokens.
      */
     function pause() external onlyOwner {
         if (paused()) {

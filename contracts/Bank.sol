@@ -145,7 +145,7 @@ contract Bank is Ownable, Pausable {
     /**
      * @notice  user withdraws Eth
      * @dev     user is removed when withdrawing all deposits
-     * @param   amount  the amount of eth to withdraw
+     * @param   amount the amount of eth to withdraw
      */
     function withdraw(uint256 amount) external whenNotPaused {
         BankAccount memory userAccount = deposited[msg.sender];
@@ -167,8 +167,8 @@ contract Bank is Ownable, Pausable {
     }
 
     /**
-     * @notice  claim interest based on deposited[user].balance
-     * @dev     interest rate differs based on principal, check interestRate() for detail
+     * @notice  claims interest on the user's deposited funds
+     * @dev     interest rate is higher for smaller deposits
      * @param   user address of recipient claiming interest
      */
     function claimInterest(address user) public whenNotPaused {
@@ -210,7 +210,7 @@ contract Bank is Ownable, Pausable {
     /**
      * @notice  moves asset from staked -> deposited
      * @dev     invokes claimReward before updating
-     * @param   amount  unstaking amount.
+     * @param   amount unstaking amount.
      */
     function unstake(uint256 amount) external whenNotPaused {
         require(
@@ -260,9 +260,9 @@ contract Bank is Ownable, Pausable {
 
     /**
      * @notice  checks if user is ranked
-     * @param   user  address of user to check
-     * @param   bottom  rank limit to check
-     * @return  bool  true if user is ranked in
+     * @param   user address of user to check
+     * @param   bottom rank limit to check
+     * @return  bool true if user is ranked in
      */
     function checkLeaderRankIn(address user, uint256 bottom) external view returns (bool) {
         address[] memory sortedLeaders = sort();
@@ -277,9 +277,9 @@ contract Bank is Ownable, Pausable {
 
     /**
      * @notice  shows deposit leaders
-     * @param   topN  maximum rank
-     * @return  users_  address of ranked users
-     * @return  amounts_  deposit amount of ranked users
+     * @param   topN maximum rank
+     * @return  users_ address of ranked users
+     * @return  amounts_ deposit amount of ranked users
      */
     function showLeaders(uint256 topN) external view returns (address[] memory users_, uint256[] memory amounts_) {
         uint256 counts = leadersCount < topN ? leadersCount : topN;
@@ -299,9 +299,9 @@ contract Bank is Ownable, Pausable {
     /**
      * @notice  shows deposit leaders in certain range
      * @param   start first rank
-     * @param   end  last rank(excluded)
-     * @return  users_  address of ranked users
-     * @return  amounts_  deposit amount of ranked users
+     * @param   end last rank(excluded)
+     * @return  users_ address of ranked users
+     * @return  amounts_ deposit amount of ranked users
      */
     function getSlicedLeaders(
         uint256 start,
@@ -323,7 +323,7 @@ contract Bank is Ownable, Pausable {
 
     /**
      * @notice  returns both deposited amount and staked amount
-     * @param   user  address of user
+     * @param   user address of user
      * @return  depositBalance  .
      * @return  stakeBalance  .
      */
@@ -337,7 +337,7 @@ contract Bank is Ownable, Pausable {
 
     /**
      * @notice  withdraw potMoney back to contract owner
-     * @param   amount  potMoney amount to withdraw
+     * @param   amount potMoney amount to withdraw
      */
     function withdrawPotMoney(uint256 amount) external onlyOwner {
         require(amount <= potMoney, "withdraw amount exceeded potMoney balance");
