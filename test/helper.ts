@@ -1,12 +1,10 @@
 import { EventLog, ContractTransactionReceipt } from "ethers";
 
 const getRandomFloat = (min: number, max: number, decimals: number) => {
-  const str = (Math.random() * (max - min) + min).toFixed(
-    decimals,
-  );
+  const str = (Math.random() * (max - min) + min).toFixed(decimals);
 
   return str;
-}
+};
 
 const duration = {
   seconds: function (val: number) {
@@ -25,7 +23,7 @@ const duration = {
 
 const getEvent = (receipt: ContractTransactionReceipt, target: string) => {
   const result = (receipt.logs || []).filter(
-    (element) => element instanceof EventLog && element.fragment.name === target,
+    (element) => element instanceof EventLog && element.fragment.name === target
   );
   return result.length ? (result[0] as EventLog).args || [] : [];
 };

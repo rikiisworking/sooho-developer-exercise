@@ -104,7 +104,7 @@ describe("RewardToken", () => {
     await rewardToken.realRatio().then((result: bigint) => {
       expect(result).to.equal(BigInt(0));
     });
-  })
+  });
 
   it("owner() should return current owner", async () => {
     await rewardToken.owner().then((result: string) => {
@@ -138,7 +138,7 @@ describe("RewardToken", () => {
     const maxSupply = await rewardToken.maxSupply();
     await rewardToken.connect(owner).setMinter(minter);
     await expect(rewardToken.connect(minter).mint(user0, maxSupply + mintAmount)).to.be.revertedWith(
-      "max supply limit violated",
+      "max supply limit violated"
     );
   });
 
@@ -164,7 +164,7 @@ describe("RewardToken", () => {
 
   it("updateSwapRatio() can be called only by owner", async () => {
     await expect(rewardToken.connect(user0).updateSwapRatio(ethers.parseUnits("100", 12))).to.be.revertedWith(
-      "Ownable: caller is not the owner",
+      "Ownable: caller is not the owner"
     );
   });
 
@@ -181,7 +181,7 @@ describe("RewardToken", () => {
     await rewardToken.connect(user0).deposit({ value: depositAmount });
     const realRatioBefore = await rewardToken.realRatio();
     await expect(rewardToken.connect(owner).updateSwapRatio(realRatioBefore * BigInt(2))).to.be.revertedWith(
-      "invalid input ratio",
+      "invalid input ratio"
     );
   });
 

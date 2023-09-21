@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { IRewardNft } from "./interfaces/IRewardNft.sol";
-import { IRewardToken } from "./interfaces/IRewardToken.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {IRewardNft} from "./interfaces/IRewardNft.sol";
+import {IRewardToken} from "./interfaces/IRewardToken.sol";
 
 contract Bank is Ownable, Pausable {
     address rewardToken;
@@ -90,6 +90,21 @@ contract Bank is Ownable, Pausable {
         if (i < right) quickSort(accounts, i, right);
     }
 
+    function removeUser(address user) internal {
+        if (userIndex[user] == leadersCount) {
+            userIndex[user] = 0;
+            users[leadersCount] = address(0);
+        } else {
+            address lastUser = users[leadersCount];
+            users[leadersCount] = users[userIndex[user]];
+            userIndex[lastUser] = userIndex[user];
+
+            userIndex[user] = 0;
+            users[leadersCount] = address(0);
+            leadersCount--;
+        }
+    }
+
     function deposit() external payable whenNotPaused {
         require(msg.value > 0, "msg.value should be greater than 0");
         require(block.timestamp > untilSidecar, "sidecar has been activated");
@@ -127,10 +142,11 @@ contract Bank is Ownable, Pausable {
 
         if (amount == userAccount.balance) {
             deposited[msg.sender].claimedAt = 0;
+            removeUser(msg.sender);
         }
 
         deposited[msg.sender].balance -= amount;
-        (bool sent, ) = msg.sender.call{ value: amount }("");
+        (bool sent, ) = msg.sender.call{value: amount}("");
         require(sent, "failed to send native token");
 
         emit Withdraw(msg.sender, amount);
@@ -147,7 +163,7 @@ contract Bank is Ownable, Pausable {
 
         deposited[user].claimedAt = block.timestamp;
 
-        (bool sent, ) = msg.sender.call{ value: actualAmount }("");
+        (bool sent, ) = msg.sender.call{value: actualAmount}("");
         require(sent, "failed to send native token");
 
         emit ClaimInterest(user, interestAmount, actualAmount);
@@ -242,7 +258,7 @@ contract Bank is Ownable, Pausable {
     function withdrawPotMoney(uint256 amount) external onlyOwner {
         require(amount <= potMoney, "withdraw amount exceeded potMoney balance");
         potMoney -= amount;
-        (bool sent, ) = msg.sender.call{ value: amount }("");
+        (bool sent, ) = msg.sender.call{value: amount}("");
         require(sent, "failed to send native token");
     }
 
