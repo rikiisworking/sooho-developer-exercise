@@ -17,8 +17,8 @@ contract Bank is Ownable, Pausable {
 
     uint256 public potMoney;
 
-    mapping(uint256 index => address userAddress) public users;
-    mapping(address userAddress => uint256 index) public addressToIndex;
+    mapping(uint256 => address) public users;
+    mapping(address => uint256) public userIndex;
 
     mapping(address => BankAccount) public deposited;
     mapping(address => BankAccount) public staked;
@@ -47,15 +47,19 @@ contract Bank is Ownable, Pausable {
      **************/
 
     function calcInterestPerSecond(uint256 amount) public pure returns (uint256) {
-        return (amount * interestRate(amount)) / 10000 / (86400 * 365);
+        return (amount * interestRate(amount)) / 10000 / (365 days);
     }
 
     function interestRate(uint256 amount) internal pure returns (uint256) {
         if (amount < 100 * 1e18) {
-            return 10000 - (((5000 / 100) * 1e18) * amount);
+            return 10000 - (((5000 * amount) / (100 * 1e18)));
         } else {
             return 5000;
         }
+    }
+
+    function applyDecimals(uint256 amount, uint8 decimals) internal pure returns (uint256) {
+        return decimals < 18 ? amount / (10 ** (18 - decimals)) : amount * (10 ** (decimals - 18));
     }
 
     function sort() internal view returns (address[] memory) {
@@ -74,8 +78,8 @@ contract Bank is Ownable, Pausable {
         if (i == j) return;
         address pivot = accounts[uint(left + (right - left) / 2)];
         while (i <= j) {
-            while (deposited[accounts[uint(i)]].balance < deposited[pivot].balance) i++;
-            while (deposited[pivot].balance < deposited[accounts[uint(j)]].balance) j--;
+            while (deposited[accounts[uint(i)]].balance > deposited[pivot].balance) i++;
+            while (deposited[pivot].balance > deposited[accounts[uint(j)]].balance) j--;
             if (i <= j) {
                 (accounts[uint(i)], accounts[uint(j)]) = (accounts[uint(j)], accounts[uint(i)]);
                 i++;
@@ -86,38 +90,37 @@ contract Bank is Ownable, Pausable {
         if (i < right) quickSort(accounts, i, right);
     }
 
-    function applyDecimals(uint256 amount, uint8 decimals) internal pure returns (uint256) {
-        return decimals < 18 ? amount / (10 ** (18 - decimals)) : amount * (10 ** (decimals - 18));
-    }
-
-    function deposit() external payable {
+    function deposit() external payable whenNotPaused {
         require(msg.value > 0, "msg.value should be greater than 0");
         require(block.timestamp > untilSidecar, "sidecar has been activated");
-        claimInterest(msg.sender);
 
-        if (addressToIndex[msg.sender] == 0) {
+        if (deposited[msg.sender].balance > 0) {
+            claimInterest(msg.sender);
+        }
+
+        if (userIndex[msg.sender] == 0) {
             uint256 newIndex = ++leadersCount;
             users[newIndex] = msg.sender;
-            addressToIndex[msg.sender] = newIndex;
+            userIndex[msg.sender] = newIndex;
         }
 
         deposited[msg.sender].balance += msg.value;
+        deposited[msg.sender].claimedAt = block.timestamp;
 
-        if (
-            leadersCount > 9 &&
-            deposited[currentLeader].balance < deposited[msg.sender].balance &&
-            IRewardNft(rewardNft).balanceOf(msg.sender) > 0
-        ) {
+        if (deposited[currentLeader].balance < deposited[msg.sender].balance) {
             currentLeader = msg.sender;
-            IRewardNft(rewardNft).mint(msg.sender);
+        }
+
+        if (leadersCount > 9 && IRewardNft(rewardNft).balanceOf(currentLeader) == 0) {
+            IRewardNft(rewardNft).mint(currentLeader);
         }
 
         emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external whenNotPaused {
         BankAccount memory userAccount = deposited[msg.sender];
-        require(amount < userAccount.balance, "withdraw amount exceeded balance");
+        require(amount <= userAccount.balance, "withdraw amount exceeded balance");
         require(block.timestamp > untilSidecar, "sidecar has been activated");
         require(!blackList[msg.sender], "user has been blacklisted");
         claimInterest(msg.sender);
@@ -133,7 +136,7 @@ contract Bank is Ownable, Pausable {
         emit Withdraw(msg.sender, amount);
     }
 
-    function claimInterest(address user) public {
+    function claimInterest(address user) public whenNotPaused {
         require(block.timestamp > untilSidecar, "sidecar has been activated");
         BankAccount memory userAccount = deposited[user];
         uint256 interestAmount = userAccount.balance < 1e16
@@ -150,26 +153,40 @@ contract Bank is Ownable, Pausable {
         emit ClaimInterest(user, interestAmount, actualAmount);
     }
 
-    function stake(uint256 amount) external {
-        claimReward(msg.sender);
+    function stake(uint256 amount) external whenNotPaused {
         require(amount <= deposited[msg.sender].balance, "stake amount exceeded deposit amount");
+
+        if (staked[msg.sender].balance > 0) {
+            claimReward(msg.sender);
+        }
+
         deposited[msg.sender].balance -= amount;
         staked[msg.sender].balance += amount;
+        staked[msg.sender].claimedAt = block.timestamp;
+
+        emit Stake(msg.sender, amount);
     }
 
-    function unstake(uint256 amount) external {
-        claimReward(msg.sender);
-        require(block.timestamp - staked[msg.sender].claimedAt < 86400, "cannot unstake for 24h after reward claimed");
+    function unstake(uint256 amount) external whenNotPaused {
+        require(
+            block.timestamp - staked[msg.sender].claimedAt > 24 hours,
+            "cannot unstake for 24h after reward claimed"
+        );
         require(amount <= staked[msg.sender].balance, "unstake amount exceeded stake amount");
+
+        claimReward(msg.sender);
+
         staked[msg.sender].balance -= amount;
         deposited[msg.sender].balance += amount;
+
+        emit Unstake(msg.sender, amount);
     }
 
-    function claimReward(address user) public {
+    function claimReward(address user) public whenNotPaused {
         BankAccount memory userAccount = staked[user];
         uint256 interestAmount = userAccount.balance < 1e16
             ? 0
-            : ((userAccount.balance * 2) / (86400 * 365)) * (block.timestamp - userAccount.claimedAt);
+            : ((userAccount.balance * 2) / (365 days)) * (block.timestamp - userAccount.claimedAt);
 
         uint8 targetDecimals = IRewardToken(rewardToken).decimals();
         uint256 mintAmount = applyDecimals(interestAmount, targetDecimals);
@@ -230,7 +247,7 @@ contract Bank is Ownable, Pausable {
     }
 
     function invokeSidecar(uint256 secs) external onlyOwner {
-        require(secs < 3 hours, "can't exceed 3 hours");
+        require(secs <= 3 hours, "can't exceed 3 hours");
         untilSidecar = block.timestamp + secs;
     }
 
