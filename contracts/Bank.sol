@@ -55,6 +55,11 @@ contract Bank is Ownable, Pausable {
         return (amount * interestRate(amount)) / 10000 / (365 days);
     }
 
+    /**
+     * @notice  returns interest rate based on principal, smaller principal returns higher interestRate
+     * @param   amount principal amount for interestRate calculation
+     * @return  uint256 interestRate
+     */
     function interestRate(uint256 amount) internal pure returns (uint256) {
         if (amount < 100 * 1e18) {
             return 10000 - (((5000 * amount) / (100 * 1e18)));
@@ -63,10 +68,20 @@ contract Bank is Ownable, Pausable {
         }
     }
 
+    /**
+     * @notice  converts input amount by given decimals
+     * @param   amount amount of ethereum
+     * @param   decimals decimals of target token
+     * @return  uint256 converted amount by given decimals
+     */
     function applyDecimals(uint256 amount, uint8 decimals) internal pure returns (uint256) {
         return decimals < 18 ? amount / (10 ** (18 - decimals)) : amount * (10 ** (decimals - 18));
     }
 
+    /**
+     * @notice  sort when view function is called
+     * @return  address[] user addresses in descending order ranked by deposit amount
+     */
     function sort() internal view returns (address[] memory) {
         address[] memory accounts = new address[](leadersCount);
         for (uint256 i = 0; i < leadersCount; i++) {
@@ -95,7 +110,14 @@ contract Bank is Ownable, Pausable {
         if (i < right) quickSort(accounts, i, right);
     }
 
+    /**
+     * @dev     called when no more user assets remain in bank
+     * @param   user target user to remove
+     */
     function removeUser(address user) internal {
+        if (deposited[user].balance > 0 || staked[user].balance > 0) {
+            return;
+        }
         if (userIndex[user] == leadersCount) {
             userIndex[user] = 0;
             users[leadersCount] = address(0);
