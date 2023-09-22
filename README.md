@@ -55,12 +55,13 @@ RewardToken->>User: 7. rewardToken minted (when claimed)
 
 ## 참고
 
+- ownable, pausable, erc20, erc721같은 일반적인 컨벤션이 있는경우 openzeppelin을 사용함
 - interface는 외부 컨트랙트 호출용으로 작성한다고 가정하고 작성함, 호출되지 않는 함수들은 interface에서 생략함
-- `IBank.sol` 인터페이스에서 `BankAccount` struct가 한번 더 선언되었는데, 이를 library에 선언하고 lib.BankAccount식으로 인터페이스와 컨트랙트 양측에서 호출해도 좋았을 것 같다. 채점에 영향이 있을까봐 선언문을 변경하지는 않았다.
+- `IBank.sol` 인터페이스에서 `BankAccount` struct가 한번 더 선언되었는데, 이를 library에 선언하고 lib.BankAccount식으로 인터페이스와 컨트랙트 양측에서 참조해도 좋았을 것 같다. 채점에 영향이 있을까봐 선언문을 변경하지는 않았다.
 
 ### RewardToken
 
-- address(this)의 eth balance에 직접 접근하기 보다 totalEthSupply변수에 총 이더를 저장함, `selfDestruct`를 이용한 의도치 않은 eth입금을 방지하기 위함
+- `address(this).balance`에 직접 접근하기 보다 totalEthSupply변수에 총 이더를 저장함, `selfDestruct`를 이용한 의도치 않은 eth입금을 방지하기 위함
 - `withdraw()`시 RewardToken을 burn처리함
 - `realRatio()` 에서는 divisionByZero를 방지하기 위해 totalSupply()가 0일때 0을 반환하도록 함
 - mint시 totalSupply()가 maxSupply를 초과하면 안된다 생각해서 `totalSupply() + amount <= maxSupply`로 revert처리함
