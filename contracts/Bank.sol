@@ -111,7 +111,7 @@ contract Bank is Ownable, Pausable {
      * @param   user target user to remove
      */
     function removeUser(address user) internal {
-        if (deposited[user].balance > 0 || staked[user].balance > 0) {
+        if (staked[user].balance > 0) {
             return;
         }
         if (userIndex[user] == leadersCount) {
