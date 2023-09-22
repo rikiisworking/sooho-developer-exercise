@@ -70,7 +70,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
         return totalEthSupply / totalSupply();
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return 6;
     }
 
