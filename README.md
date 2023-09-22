@@ -26,11 +26,31 @@ Code Version 1.1.3
 - Bank에서 minting하기 위해 RewardNft와 RewardToken을 참조
 - Router에서 정보를 조회하기 위해 Bank를 참조
 
-<details>
-    <summary> UML diagram </summary>
-    <img src="./classDiagram.svg">
+### seuqnce diagram
 
-- interface는 호출 시 참조되는 부분만 작성됨
+```mermaid
+sequenceDiagram
+
+participant User
+participant Bank
+participant RewardNFT
+participant RewardToken
+
+User->>Bank: 1. deposit eth
+Bank->>RewardNFT: 2. calls mint rewardNFT (if ranked)
+RewardNFT->>User: 3. mint rewardNFT (if ranked)
+Bank->>User: 4. transfer interest (when claimed)
+User->>Bank: 5. stake eth
+Bank->>RewardToken: 6. calls mint rewardToken (when claimed)
+RewardToken->>User: 7. rewardToken minted (when claimed)
+
+```
+
+### UML Diagram
+
+<details>
+    <summary> 펼쳐보기 </summary>
+    <img src="./classDiagram.svg">
 </details>
 
 ## 참고
@@ -54,7 +74,7 @@ Code Version 1.1.3
   - 가능하면 iteration이 필요한 리스트는 offchain에 저장하는게 더 좋다고 생각함
   - users의 index는 1부터 시작함, 왜냐하면 userIndex에서 index를 가져올때 0값이 아직 등록 안된 고객인지 index가 0인 고객인지 구분할 수 없기 때문
   - 예적금이 없는 유저는 삭제될 수 있도록 removeUser()함수를 추가함
-  - 금액별 sorting은 view함수 호출시 수행하도록 했으며, 256개항목이면 insertionSort알고리즘을 사용하여도 차이가 크지 않을 줄 알았으나, quickSort와 수행시간이 5배정도 차이남
+  - 금액별 sorting은 view함수 호출시 수행하도록 했으며, 256개항목이면 insertionSort알고리즘을 사용하여도 차이가 크지 않을 줄 알았으나, quickSort에 비해 5배정도 느림
 
 ### Router
 
