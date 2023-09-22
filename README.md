@@ -26,7 +26,7 @@ Code Version 1.1.3
 - Bank에서 minting하기 위해 RewardNft와 RewardToken을 참조
 - Router에서 정보를 조회하기 위해 Bank를 참조
 
-### seuqnce diagram
+### Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -55,6 +55,7 @@ RewardToken->>User: 7. rewardToken minted (when claimed)
 
 ## 참고
 
+- 작업할때는 패키지 관리자로 yarn을 사용했음
 - ownable, pausable, erc20, erc721같은 일반적인 컨벤션이 있는경우 openzeppelin을 사용함
 - interface는 외부 컨트랙트 호출용으로 작성한다고 가정하고 작성함, 호출되지 않는 함수들은 interface에서 생략함
 - `IBank.sol` 인터페이스에서 `BankAccount` struct가 한번 더 선언되었는데, 이를 library에 선언하고 lib.BankAccount식으로 인터페이스와 컨트랙트 양측에서 참조해도 좋았을 것 같다. 채점에 영향이 있을까봐 선언문을 변경하지는 않았다.
