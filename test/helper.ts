@@ -1,5 +1,13 @@
 import { EventLog, ContractTransactionReceipt } from "ethers";
 
+const getRandomFloatsWithoutDuplicates = (min: number, max: number, count: number) => {
+  const numbers = new Set<number>();
+  while (numbers.size < count) {
+    numbers.add(parseFloat(getRandomFloat(min, max, 3)))
+  }
+  return [...numbers];
+}
+
 const getRandomFloat = (min: number, max: number, decimals: number) => {
   const str = (Math.random() * (max - min) + min).toFixed(decimals);
 
@@ -28,4 +36,4 @@ const getEvent = (receipt: ContractTransactionReceipt, target: string) => {
   return result.length ? (result[0] as EventLog).args || [] : [];
 };
 
-export { getEvent, duration, getRandomFloat };
+export { getEvent, duration, getRandomFloat, getRandomFloatsWithoutDuplicates };

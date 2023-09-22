@@ -67,7 +67,7 @@ describe("Router", () => {
     leaders = await router.getUsers(3);
     expect(leaders[0]).to.deep.equal(depositInfos.slice(20, 25).map((element) => element.address));
     expect(leaders[1]).to.deep.equal(depositInfos.slice(20, 25).map((element) => element.amount));
-  })
+  });
 
   it("getUserInfo() should work as expected", async () => {
     const payload_0 = abiCoder.encode(["bool", "bool"], [true, true]);
@@ -91,7 +91,7 @@ describe("Router", () => {
     const isBlacked = await bank.blackList(users[0]);
     const latestBlock = await time.latestBlock();
 
-    await router.getUserInfo(users[0], payload_0).then((result) => {
+    await router.getUserInfo(users[0], payload_0).then((result: [bigint, bigint, bigint, bigint, boolean, bigint]) => {
       expect(Array.from(result.values())).to.deep.equal([
         depositBalance,
         depositClaimedAt,
@@ -102,7 +102,7 @@ describe("Router", () => {
       ]);
     });
 
-    await router.getUserInfo(users[0], payload_1).then((result) => {
+    await router.getUserInfo(users[0], payload_1).then((result: [bigint, bigint, bigint, bigint, boolean, bigint]) => {
       expect(Array.from(result.values())).to.deep.equal([
         BigInt(0),
         BigInt(0),
@@ -113,7 +113,7 @@ describe("Router", () => {
       ]);
     });
 
-    await router.getUserInfo(users[0], payload_2).then((result) => {
+    await router.getUserInfo(users[0], payload_2).then((result: [bigint, bigint, bigint, bigint, boolean, bigint]) => {
       expect(Array.from(result.values())).to.deep.equal([
         depositBalance,
         depositClaimedAt,
@@ -124,7 +124,7 @@ describe("Router", () => {
       ]);
     });
 
-    await router.getUserInfo(users[0], payload_3).then((result) => {
+    await router.getUserInfo(users[0], payload_3).then((result: [bigint, bigint, bigint, bigint, boolean, bigint]) => {
       expect(Array.from(result.values())).to.deep.equal([
         BigInt(0),
         BigInt(0),
@@ -134,7 +134,5 @@ describe("Router", () => {
         latestBlock,
       ]);
     });
-
-
   });
 });

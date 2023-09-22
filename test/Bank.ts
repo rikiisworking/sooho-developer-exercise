@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { RewardNft, RewardToken, Bank } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
-import { getEvent, duration, getRandomFloat } from "./helper";
+import { getEvent, duration, getRandomFloatsWithoutDuplicates } from "./helper";
 
 describe("Bank", () => {
   let rewardNft: RewardNft;
@@ -59,8 +59,9 @@ describe("Bank", () => {
     await bank.userIndex(user0.address).then((result: bigint) => {
       expect(result).to.equal(BigInt(1));
     });
+
     const currentTime = await time.latest();
-    await bank.deposited(user0).then((result) => {
+    await bank.deposited(user0).then((result: [bigint, bigint]) => {
       expect(result[0]).to.equal(BigInt(depositAmount));
       expect(result[1]).to.equal(currentTime);
     });
@@ -98,6 +99,7 @@ describe("Bank", () => {
       expect(event[0]).to.equal(users[6].address);
       expect(event[1]).to.equal(ethers.parseEther("100"));
     }
+
     await rewardNft.balanceOf(users[6]).then((result: bigint) => {
       expect(result).to.equal(BigInt(1));
     });
@@ -124,7 +126,7 @@ describe("Bank", () => {
     await bank.connect(user0).deposit({ value: depositAmount });
     const balanceBefore = await ethers.provider.getBalance(user0);
     await bank.connect(user0).withdraw(withdrawAmount);
-    await bank.deposited(user0).then((result) => {
+    await bank.deposited(user0).then((result: [bigint, bigint]) => {
       expect(result[0]).to.equal(depositAmount - withdrawAmount);
     });
     const balanceAfter = await ethers.provider.getBalance(user0);
@@ -157,8 +159,7 @@ describe("Bank", () => {
     expect(leadersCountAfter2).to.equal(leadersCountBefore2);
     await bank.userIndex(user1).then((result: bigint) => {
       expect(result).not.to.equal(BigInt(0));
-    })
-
+    });
   });
 
   it("withdraw() should revert if withdraw amount is greater than balance", async () => {
@@ -256,6 +257,7 @@ describe("Bank", () => {
       expect(event[0]).to.equal(user0.address);
       expect(event[1]).to.equal(stakeAmount);
     }
+
     const currentTime = await time.latest();
     await bank.staked(user0).then((result: [bigint, bigint]) => {
       expect(result[0]).to.equal(stakeAmount);
@@ -264,6 +266,7 @@ describe("Bank", () => {
     await bank.deposited(user0).then((result: [bigint, bigint]) => {
       expect(result[0]).to.equal(depositAmount - stakeAmount);
     });
+
     await time.increase(10);
     tx = await bank.connect(user0).stake(ethers.parseEther("5"));
     result = await tx.wait();
@@ -292,6 +295,7 @@ describe("Bank", () => {
     await bank.connect(user0).deposit({ value: depositAmount });
     await bank.connect(user0).stake(stakeAmount);
     await time.increase(duration.days(1));
+
     const tx = await bank.connect(user0).unstake(stakeAmount / BigInt(2));
     const result = await tx.wait();
     if (result) {
@@ -299,6 +303,7 @@ describe("Bank", () => {
       expect(event[0]).to.equal(user0.address);
       expect(event[1]).to.equal(stakeAmount / BigInt(2));
     }
+
     const currentTime = await time.latest();
     await bank.staked(user0).then((result: [bigint, bigint]) => {
       expect(result[0]).to.equal(stakeAmount / BigInt(2));
@@ -335,10 +340,11 @@ describe("Bank", () => {
     await bank.connect(user0).deposit({ value: depositAmount });
     await bank.connect(user0).stake(stakeAmount);
     await time.increase(duration.days(1) - 1);
+
     const expectedAmount =
       (((stakeAmount * BigInt(2)) / BigInt(duration.days(365))) * BigInt(duration.days(1))) / BigInt(10 ** 12);
-    const tx = await bank.connect(user0).claimReward(user0);
-    const result = await tx.wait();
+    let tx = await bank.connect(user0).claimReward(user0);
+    let result = await tx.wait();
     if (result) {
       const event = getEvent(result, "ClaimReward");
       expect(event[0]).to.equal(user0.address);
@@ -348,6 +354,17 @@ describe("Bank", () => {
     await rewardToken.balanceOf(user0).then((result: BigInt) => {
       expect(result).to.equal(expectedAmount);
     });
+
+    await bank.connect(user1).deposit({ value: ethers.parseEther("0.01") });
+    await bank.connect(user0).stake(ethers.parseEther("0.009"));
+    await time.increase(duration.days(1) - 1);
+    tx = await bank.connect(user1).claimReward(user1);
+    result = await tx.wait();
+    if (result) {
+      const event = getEvent(result, "ClaimReward");
+      expect(event[0]).to.equal(user1.address);
+      expect(event[1]).to.equal(BigInt(0));
+    }
   });
 
   it("claimReward() can't be called if paused", async () => {
@@ -370,12 +387,14 @@ describe("Bank", () => {
 
   it("checkLeaderRankIn() should work as expected", async () => {
     const depositInfos = [];
-    for (const user of users.slice(0, 256)) {
-      const depositAmount = ethers.parseEther(getRandomFloat(1.0, 200.0, 3));
-      await bank.connect(user).deposit({ value: depositAmount });
+    const dupeRemovedAmounts = getRandomFloatsWithoutDuplicates(1.0, 300.0, 300).map((element) =>
+      ethers.parseEther(element.toString())
+    );
+    for (const [i, user] of users.slice(0, 256).entries()) {
+      await bank.connect(user).deposit({ value: dupeRemovedAmounts[i] });
       depositInfos.push({
         address: user.address,
-        amount: depositAmount,
+        amount: dupeRemovedAmounts[i],
       });
     }
 
@@ -396,12 +415,14 @@ describe("Bank", () => {
 
   it("showLeaders() should work as expected", async () => {
     const depositInfos = [];
-    for (const user of users.slice(0, 256)) {
-      const depositAmount = ethers.parseEther(getRandomFloat(1.0, 200.0, 3));
-      await bank.connect(user).deposit({ value: depositAmount });
+    const dupeRemovedAmounts = getRandomFloatsWithoutDuplicates(1.0, 300.0, 300).map((element) =>
+      ethers.parseEther(element.toString())
+    );
+    for (const [i, user] of users.slice(0, 256).entries()) {
+      await bank.connect(user).deposit({ value: dupeRemovedAmounts[i] });
       depositInfos.push({
         address: user.address,
-        amount: depositAmount,
+        amount: dupeRemovedAmounts[i],
       });
     }
 
@@ -445,11 +466,13 @@ describe("Bank", () => {
       expect(result).to.equal(ethers.parseEther("10"));
     });
     const ownerBalanceBefore = await ethers.provider.getBalance(owner);
+
     await bank.connect(owner).withdrawPotMoney(ethers.parseEther("5"));
     await bank.potMoney().then((result: bigint) => {
       expect(result).to.equal(ethers.parseEther("5"));
     });
     const ownerBalanceAfter = await ethers.provider.getBalance(owner);
+    
     expect(ownerBalanceAfter).to.be.gt(ownerBalanceBefore);
   });
 
@@ -530,12 +553,14 @@ describe("Bank", () => {
 
   it("getSlicedLeaders() should work properly", async () => {
     const depositInfos = [];
-    for (const user of users.slice(0, 25)) {
-      const depositAmount = ethers.parseEther(getRandomFloat(1.0, 200.0, 3));
-      await bank.connect(user).deposit({ value: depositAmount });
+    const dupeRemovedAmounts = getRandomFloatsWithoutDuplicates(1.0, 300.0, 25).map((element) =>
+      ethers.parseEther(element.toString())
+    );
+    for (const [i, user] of users.slice(0, 25).entries()) {
+      await bank.connect(user).deposit({ value: dupeRemovedAmounts[i] });
       depositInfos.push({
         address: user.address,
-        amount: depositAmount,
+        amount: dupeRemovedAmounts[i],
       });
     }
 
@@ -554,6 +579,5 @@ describe("Bank", () => {
     leaders = await bank.getSlicedLeaders(20, 30);
     expect(leaders[0]).to.deep.equal(depositInfos.slice(20, 25).map((element) => element.address));
     expect(leaders[1]).to.deep.equal(depositInfos.slice(20, 25).map((element) => element.amount));
-  })
-
+  });
 });

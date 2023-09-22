@@ -61,11 +61,7 @@ contract Bank is Ownable, Pausable {
      * @return  uint256 interestRate
      */
     function interestRate(uint256 amount) internal pure returns (uint256) {
-        if (amount < 100 * 1e18) {
-            return 10000 - (((5000 * amount) / (100 * 1e18)));
-        } else {
-            return 5000;
-        }
+        return amount < 100 * 1e18 ? 10000 - (((5000 * amount) / (100 * 1e18))) : 5000;
     }
 
     /**
@@ -93,7 +89,6 @@ contract Bank is Ownable, Pausable {
 
     function quickSort(address[] memory accounts, int left, int right) internal view {
         // reference: https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
-
         int i = left;
         int j = right;
         if (i == j) return;
@@ -141,9 +136,7 @@ contract Bank is Ownable, Pausable {
         require(msg.value > 0, "msg.value should be greater than 0");
         require(block.timestamp > untilSidecar, "sidecar has been activated");
 
-        if (deposited[msg.sender].balance > 0) {
-            claimInterest(msg.sender);
-        }
+        claimInterest(msg.sender);
 
         if (userIndex[msg.sender] == 0) {
             uint256 newIndex = ++leadersCount;
@@ -152,7 +145,6 @@ contract Bank is Ownable, Pausable {
         }
 
         deposited[msg.sender].balance += msg.value;
-        deposited[msg.sender].claimedAt = block.timestamp;
 
         if (deposited[currentLeader].balance < deposited[msg.sender].balance) {
             currentLeader = msg.sender;
@@ -171,15 +163,15 @@ contract Bank is Ownable, Pausable {
      * @param   amount the amount of eth to withdraw
      */
     function withdraw(uint256 amount) external whenNotPaused {
-        BankAccount memory userAccount = deposited[msg.sender];
-        require(amount <= userAccount.balance, "withdraw amount exceeded balance");
+        require(amount <= deposited[msg.sender].balance, "withdraw amount exceeded balance");
         require(block.timestamp > untilSidecar, "sidecar has been activated");
         require(!blackList[msg.sender], "user has been blacklisted");
+
         claimInterest(msg.sender);
 
         deposited[msg.sender].balance -= amount;
 
-        if (amount == userAccount.balance) {
+        if (deposited[msg.sender].balance == 0) {
             deposited[msg.sender].claimedAt = 0;
             removeUser(msg.sender);
         }
@@ -197,19 +189,19 @@ contract Bank is Ownable, Pausable {
      */
     function claimInterest(address user) public whenNotPaused {
         require(block.timestamp > untilSidecar, "sidecar has been activated");
-        BankAccount memory userAccount = deposited[user];
-        uint256 interestAmount = userAccount.balance < 1e16
+
+        uint256 interest = deposited[user].balance < 1e16
             ? 0
-            : calcInterestPerSecond(userAccount.balance) * (block.timestamp - userAccount.claimedAt);
-        uint256 actualAmount = potMoney < interestAmount ? potMoney : interestAmount;
-        potMoney -= actualAmount;
+            : calcInterestPerSecond(deposited[user].balance) * (block.timestamp - deposited[user].claimedAt);
+        uint256 canSend = potMoney < interest ? potMoney : interest;
+        potMoney -= canSend;
 
         deposited[user].claimedAt = block.timestamp;
 
-        (bool sent, ) = msg.sender.call{value: actualAmount}("");
+        (bool sent, ) = msg.sender.call{value: canSend}("");
         require(sent, "failed to send native token");
 
-        emit ClaimInterest(user, interestAmount, actualAmount);
+        emit ClaimInterest(user, interest, canSend);
     }
 
     /**
@@ -220,13 +212,10 @@ contract Bank is Ownable, Pausable {
     function stake(uint256 amount) external whenNotPaused {
         require(amount <= deposited[msg.sender].balance, "stake amount exceeded deposit amount");
 
-        if (staked[msg.sender].balance > 0) {
-            claimReward(msg.sender);
-        }
+        claimReward(msg.sender);
 
         deposited[msg.sender].balance -= amount;
         staked[msg.sender].balance += amount;
-        staked[msg.sender].claimedAt = block.timestamp;
 
         emit Stake(msg.sender, amount);
     }
@@ -257,18 +246,15 @@ contract Bank is Ownable, Pausable {
      * @param   user recipient claiming reward
      */
     function claimReward(address user) public whenNotPaused {
-        BankAccount memory userAccount = staked[user];
-        uint256 interestAmount = userAccount.balance < 1e16
+        uint256 interestAmount = staked[user].balance < 1e16
             ? 0
-            : ((userAccount.balance * 2) / (365 days)) * (block.timestamp - userAccount.claimedAt);
-
-        uint8 targetDecimals = IRewardToken(rewardToken).decimals();
-        uint256 mintAmount = applyDecimals(interestAmount, targetDecimals);
+            : ((staked[user].balance * 2) / (365 days)) * (block.timestamp - staked[user].claimedAt);
+        uint256 reward = applyDecimals(interestAmount, IRewardToken(rewardToken).decimals());
 
         staked[user].claimedAt = block.timestamp;
-        IRewardToken(rewardToken).mint(user, mintAmount);
+        IRewardToken(rewardToken).mint(user, reward);
 
-        emit ClaimReward(user, mintAmount);
+        emit ClaimReward(user, reward);
     }
 
     /**
@@ -289,8 +275,9 @@ contract Bank is Ownable, Pausable {
      * @return  bool true if user is ranked in
      */
     function checkLeaderRankIn(address user, uint256 bottom) external view returns (bool) {
-        address[] memory sortedLeaders = sort();
         uint256 counts = leadersCount < bottom ? leadersCount : bottom;
+        address[] memory sortedLeaders = sort();
+
         for (uint256 i = 0; i < counts; i++) {
             if (user == sortedLeaders[i]) {
                 return true;
@@ -366,6 +353,7 @@ contract Bank is Ownable, Pausable {
     function withdrawPotMoney(uint256 amount) external onlyOwner {
         require(amount <= potMoney, "withdraw amount exceeded potMoney balance");
         potMoney -= amount;
+
         (bool sent, ) = msg.sender.call{value: amount}("");
         require(sent, "failed to send native token");
     }

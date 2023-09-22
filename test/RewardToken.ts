@@ -27,6 +27,15 @@ describe("RewardToken", () => {
     await rewardToken.waitForDeployment();
   });
 
+  it("RewardToken should have designated name and symbol", async () => {
+    await rewardToken.name().then((result: string) => {
+      expect(result).to.equal("Pacific");
+    })
+    await rewardToken.symbol().then((result: string) => {
+      expect(result).to.equal("PAC");
+    })
+  })
+
   it("decimals() should return 6", async () => {
     await rewardToken.decimals().then((result: bigint) => {
       expect(result).to.equal(BigInt(6));
@@ -59,11 +68,9 @@ describe("RewardToken", () => {
   it("withdraw() should transfer Ether to user", async () => {
     await rewardToken.connect(user0).deposit({ value: depositAmount });
     const tokenBalance = await rewardToken.connect(user0).balanceOf(user0);
-
     const ethBalanceBefore = await ethers.provider.getBalance(user0);
 
     const tx = await rewardToken.connect(user0).withdraw(tokenBalance / BigInt(2));
-
     const result = await tx.wait();
     if (result) {
       const event = getEvent(result, "Withdraw");

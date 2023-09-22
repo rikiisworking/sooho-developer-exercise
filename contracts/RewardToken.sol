@@ -64,7 +64,7 @@ contract RewardToken is ERC20, Ownable, Pausable {
      * @return  uint256 ratio
      */
     function realRatio() public view returns (uint256) {
-        if (totalEthSupply == 0) {
+        if (totalSupply() == 0) {
             return 0;
         }
         return totalEthSupply / totalSupply();
