@@ -69,12 +69,12 @@ RewardToken->>User: 7. rewardToken minted (when claimed)
 ### Bank
 
 - `withdraw()`에서는 claimInterest처럼 potMoney수량이 부족하다고 출금액을 줄이지는 않았음, 사용자가 입금한 금액은 그대로 컨트랙트에 있다고 가정함
-- 입금액1위 고객을 구하기 위해 deposit할때마다 순위를 따로 연산하거나, sortedArray를 사용하는것보다 currentLeader이라는 변수를 두고 최고입금고객만 비교하는게 더 저렴하다고 생각함
-- `staked`나 `deposited`에 접근할때 memory 변수에 할당할까 하였으나, 코드 가독성을 위해 스토리지 변수를 참조하도록함
+- 입금액1위 고객을 구하기 위해 deposit할때마다 순위를 따로 연산하거나, sortedArray를 사용하는것보다 `currentLeader`이라는 변수를 두고 최고입금고객만 비교하는게 더 저렴하다고 생각함
+- `staked`나 `deposited`에 접근할때 memory 변수에 할당할까 하였으나, 가스 차이가 미미했고, 코드 가독성을 위해 스토리지 변수를 참조하도록함
 - iteration을 관련 고려사항
   - 가능하면 iteration이 필요한 리스트는 offchain에 저장하는게 더 좋다고 생각함
-  - users의 index는 1부터 시작함, 왜냐하면 userIndex에서 index를 가져올때 0값이 아직 등록 안된 고객인지 index가 0인 고객인지 구분할 수 없기 때문
-  - 예적금이 없는 유저는 삭제될 수 있도록 removeUser()함수를 추가함
+  - `users`의 index는 1부터 시작함, 왜냐하면 `userIndex`에서 index를 가져올때 0값이 아직 등록 안된 고객인지 index가 0인 고객인지 구분할 수 없기 때문
+  - 예적금이 없는 유저는 삭제될 수 있도록 `removeUser()`함수를 추가함
   - 금액별 sorting은 view함수 호출시 수행하도록 했으며, 256개항목이면 insertionSort알고리즘을 사용하여도 차이가 크지 않을 줄 알았으나, quickSort에 비해 5배정도 느림
 
 ### Router
